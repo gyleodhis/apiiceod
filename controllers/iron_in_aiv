@@ -1,0 +1,201 @@
+var BaseController = require("./basecontroller"),
+  _ = require("underscore"),
+  swagger = require("swagger-node-restify")
+
+
+
+function Iron_in_aiv() {
+}
+
+Iron_in_aiv.prototype = new BaseController()
+
+module.exports = function(lib) {
+  var controller = new Iron_in_aiv();
+
+
+  /**
+    Helper function for the POST action
+    */
+  function mergeStores(list1, list2) {
+    var stores1 = {}
+    var stores2 = {}
+    _.each(list1, function(st) {
+      if(st.store)
+        stores1[st.store] = st.copies
+    })
+    _.each(list2, function(st) {
+      if(st.store)
+        stores2[st.store] = st.copies
+    })
+    var stores = _.extend(stores1, stores2)
+    return _.map(stores, function(v, k) {
+      return {store: k, copies: v}
+    })
+  }
+
+
+  controller.addAction({
+        'path': '/iron_in_aiv',
+        'method': 'GET',
+        'summary': 'Returns a JSON file for Iron nutrition content in African indeginious vegetables.',
+        "params": [ swagger.queryParam('q', 'Search term', 'string'), swagger.queryParam('genre','Filter by no_rust', 'string')],
+        'responseClass': 'Dataset',
+        'nickname': 'getIron_in_aiv'
+      }, function(req, res, next) {
+
+        var criteria = {}
+        if(req.params.q) {
+          var expr = new RegExp('.*' + req.params.q + '.*')
+          criteria.$or = [
+            {canopy: expr},
+            {ipm: expr},
+            {no_thrips: expr}
+          ]
+        }
+        if(req.params.no_rust) {
+          criteria.no_rust = req.params.no_rust
+        }
+
+        lib.db.model('Dataset')
+          .find(criteria)
+          .populate('stores.store')
+          .exec(function(err, books) {
+          if(err) return next(err)
+          controller.writeHAL(res, books)
+        })
+      })
+
+   controller.addAction({
+        'path': '/iron_in_aiv/{id}',
+        'method': 'GET',
+        'params': [ swagger.pathParam('id', 'The Id of the amount of iron in the African indeginious vegetable according to the preset condition.','int') ],
+        'summary': 'Returns the full data of a the Iron nutritional content in the vegetable',
+        'nickname': 'getIron_in_aiv'
+      }, function(req, res, next) {
+        var id = req.params.id
+        if(id) {
+          lib.db.model("Dataset")
+            .findOne({_id: id})
+            .populate('id')
+            .populate('canopy')
+            .populate('ipm')
+            .populate('no_rust')
+            .populate('no_thrips')
+            .populate('all_control')
+            .populate('providers')
+            .exec(function(err, frenchbeans) {
+              if(err) return next(controller.RESTError('InternalServerError', err))
+              if(!book) {
+                return next(controller.RESTError('ResourceNotFoundError', 'The vegeable was not found'))
+              }
+              controller.writeHAL(res, frenchbeans)
+            })
+        } else {
+          next(controller.RESTError('InvalidArgumentError', 'Missing vegetable id'))
+        }
+      })
+
+  controller.addAction({
+        'path': '/iron_in_aiv',
+        'method': 'POST',
+        'params': [ swagger.bodyParam('iron_in_aiv', 'JSON representation of the new dataset','string') ],
+        'summary': 'Adds a new dataset into the collectoin',
+        'nickname': 'newData'
+      }, function(req, res, next) {
+        var iron_in_aivData = req.body 
+        if(iron_in_aivData) {
+          ipm = iron_in_aivData.ipm
+          lib.db.model("Dataset")
+            .findOne({ipm: ipm})
+            .exec(function(err, iron_in_aivModel) {
+              if(!frenchbeanModel) {
+                frenchbeanModel = lib.db.model("Dataset")(iron_in_aivModel)
+              } else {
+                // This statement return nothing. 
+              }
+              iron_in_aivModel.save(function(err, iron_in_aiv) {
+                  if(err) return next(controller.RESTError('InternalServerError', err))
+                  controller.writeHAL(res, iron_in_aiv)
+                })
+            })
+          
+        } else {
+          next(controller.RESTError('InvalidArgumentError', 'Missing content of dataset'))
+        }
+      })
+
+  controller.addAction({
+        'path': '/iron_in_aiv/{id}/providers',
+        'method': 'GET',
+        'params': [ swagger.pathParam('id', 'The Id of the dataset','int') ],
+        'summary': 'Returns the list of providers of one particular dataset',
+        'nickname': 'getDataProviders'
+      }, function(req, res, next) {
+        var id = req.params.id
+        if(id) {
+          lib.db.model("Dataset")
+            .findOne({_id: id})
+            .populate('providers')
+            .exec(function(err, iron_in_aiv) {
+              if(err) return next(controller.RESTError('InternalServerError', err))
+              if(!frenchbeans) {
+                return next(controller.RESTError('ResourceNotFoundError', 'Data not found'))
+              }
+              controller.writeHAL(res, iron_in_aiv.providers)
+            })
+        } else {
+          next(controller.RESTError('InvalidArgumentError', 'Missing data id'))
+        }
+      })
+  controller.addAction({
+        'path': '/iron_in_aiv/{id}/reviews',
+        'method': 'GET',
+        'params': [ swagger.pathParam('id', 'The Id of the dataset','int') ],
+        'summary': 'Returns the list of reviews of one specific dataset',
+        'nickname': 'getDataReviews'
+      }, function(req, res,next) {
+        var id = req.params.id
+        if(id) {
+          lib.db.model("Dataset")
+            .findOne({_id: id})
+            .populate('reviews')
+            .exec(function(err, iron_in_aiv) {
+              if(err) return next(controller.RESTError('InternalServerError', err))
+              if(!book) {
+                return next(controller.RESTError('ResourceNotFoundError', 'The data iron iron percentages was not found'))
+              }
+              controller.writeHAL(res, iron_in_aiv.reviews)
+            })
+        } else {
+          next(controller.RESTError('InvalidArgumentError', 'Missing beans id'))
+        }
+      })
+  
+  controller.addAction({
+        'path': '/iron_in_aiv/{id}',
+        'method': 'PUT',
+        'params': [ swagger.pathParam('id', 'The Id of the frenchbeans to update','string'),
+                   swagger.bodyParam('frenchbeans', 'The data to change on the frenchbeans', 'string') ],
+        'summary': 'Updates the information of one specific frenchbeans',
+        'nickname': 'updateData'
+      }, function(req, res, next) {
+          var data = req.body
+          var id = req.params.id
+          if(id) {
+            
+            lib.db.model("Dataset").findOne({_id: id}).exec(function(err, book) {
+            if(err) return next(controller.RESTError('InternalServerError', err))
+              // Replacing book with iron_in_aiv.
+              if(!iron_in_aiv) return next(controller.RESTError('ResourceNotFoundError', 'Data not found'))
+              iron_in_aiv = _.extend(frenchbeans, data)
+              iron_in_aiv.save(function(err, data) {
+              if(err) return next(controller.RESTError('InternalServerError', err))
+               controller.writeHAL(res, data.toJSON())
+              })
+            })
+          } else {
+            next(controller.RESTError('InvalidArgumentError', 'Invalid id received'))
+          }
+      })
+  return controller
+}
