@@ -1,4 +1,12 @@
-Original source code can be found at https://github.com/Apress/pro-rest-api-dev-w-node.js source code of the following book http://www.apress.com/gp/book/9781484209189
+ ________________________
+< just a simple apiiceod >
+ ------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+
 
 Directory structure.
 ├── controllers
