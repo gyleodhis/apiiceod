@@ -1,12 +1,13 @@
- ________________________
-< just a simple apiiceod >
- ------------------------
+ ____________________________________
+/ Fixed the initial routing problem. \
+| After you start the server go to   |
+\ locallhost:9000/swagger-ui         /
+ ------------------------------------
         \   ^__^
          \  (oo)\_______
             (__)\       )\/\
                 ||----w |
                 ||     ||
-
 
 Directory structure.
 ├── controllers
